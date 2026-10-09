@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>格魯地下實驗室：小小兵頭像生成器 (Gru's Secret Lab)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        labDark: '#0e121a',
+                        labPanel: '#161c28',
+                        labMetal: '#232b3e',
+                        labAccent: '#ffd700',
+                        labCyan: '#00f0ff',
+                        labGreen: '#10b981',
+                        labRed: '#f43f5e'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0e121a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #232b3e;
+            border-radius: 4px;
+            border: 1px solid #ffd700;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ffd700;
+        }
+
+        /* Hazard Stripes */
+        .hazard-stripes {
+            background: repeating-linear-gradient(
+                45deg,
+                #ffd700,
+                #ffd700 12px,
+                #0e121a 12px,
+                #0e121a 24px
+            );
+        }
+
+        /* Metal rivet styling */
+        .metal-rivet {
+            box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.5), inset -1px -1px 2px rgba(0, 0, 0, 0.9);
+        }
+
+        /* Glow effects */
+        .glow-yellow {
+            box-shadow: 0 0 18px rgba(255, 215, 0, 0.45);
+        }
+        .text-glow-yellow {
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(255, 215, 0, 0.4), inset 0 0 10px rgba(255, 215, 0, 0.2); }
+            50% { box-shadow: 0 0 28px rgba(255, 215, 0, 0.85), inset 0 0 18px rgba(255, 215, 0, 0.5); }
+        }
+        .bello-btn {
+            animation: pulse-glow 2.5s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-labDark text-slate-100 font-sans min-h-screen flex flex-col justify-between selection:bg-labAccent selection:text-labDark">
+
+    <header class="border-b-4 border-labAccent bg-labPanel relative overflow-hidden shadow-2xl">
+        <div class="hazard-stripes h-2.5 w-full"></div>
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-labAccent flex items-center justify-center font-black text-labDark text-xl shadow-lg border-2 border-yellow-200">
+                    G
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-black tracking-wider text-labAccent text-glow-yellow flex items-center gap-2">
+                        GRU'S SECRET LAB <span class="text-xs px-2 py-0.5 rounded bg-red-600 text-white font-mono tracking-normal shadow">v3.1 HD VECTOR</span>
+                    </h1>
+                    <p class="text-xs text-slate-400 font-mono">HIGH-DETAIL MINION AVATAR GENERATOR</p>
+                </div>
+            </div>
+
+            <!-- Lab Status LED & Mute Toggle -->
+            <div class="flex items-center space-x-4">
+                <div class="hidden sm:flex items-center space-x-2 bg-labDark/80 px-3 py-1.5 rounded-full border border-slate-700 font-mono text-xs">
+                    <span class="w-2.5 h-2.5 rounded-full bg-labGreen animate-ping"></span>
+                    <span class="text-slate-300">LAB ENGINE: <strong class="text-labGreen">3D SHADED</strong></span>
+                </div>
+                <button id="sound-toggle-btn" onclick="toggleSound()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-mono flex items-center gap-1.5 transition">
+                    <span id="sound-icon">🔊</span> <span id="sound-text">SFX: ON</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- Left Column: Minion Canvas Display (500x500 SVG Canvas) -->
+        <section class="lg:col-span-5 flex flex-col items-center">
+            <div class="w-full max-w-[500px] bg-labPanel rounded-2xl p-4 border-2 border-slate-700 shadow-2xl relative">
+                
+                <!-- Metallic Corner Rivets -->
+                <div class="absolute top-2 left-2 w-3 h-3 rounded-full bg-slate-500 metal-rivet"></div>
+                <div class="absolute top-2 right-2 w-3 h-3 rounded-full bg-slate-500 metal-rivet"></div>
+                <div class="absolute bottom-2 left-2 w-3 h-3 rounded-full bg-slate-500 metal-rivet"></div>
+                <div class="absolute bottom-2 right-2 w-3 h-3 rounded-full bg-slate-500 metal-rivet"></div>
+
+                <!-- Header Badge -->
+                <div class="flex justify-between items-center mb-3 px-2 font-mono text-xs text-slate-400">
+                    <span class="flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-labAccent"></span> 3D VECTOR CANVAS
+                    </span>
+                    <span class="bg-labDark px-2 py-0.5 rounded border border-slate-800">500 x 500 px</span>
+                </div>
+
+                <!-- SVG Container Canvas -->
+                <div class="relative w-full aspect-square rounded-xl overflow-hidden bg-slate-950 border border-slate-700 shadow-inner flex items-center justify-center">
+                    <svg id="minion-svg" viewBox="0 0 500 500" width="100%" height="100%" class="w-full h-full select-none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- SVG dynamically populated via JS -->
+                    </svg>
+                </div>
+
+                <!-- Big BELLO! Randomizer Button -->
+                <button onclick="randomizeMinion()" class="bello-btn mt-4 w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-yellow-400 via-amber-300 to-yellow-500 text-labDark font-black text-lg sm:text-xl tracking-wider uppercase shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 border-2 border-yellow-200">
+                    <span>🍌 BELLO! 隨機生成 🎲</span>
+                </button>
+            </div>
+        </section>
+
+        <section class="lg:col-span-7 w-full bg-labPanel rounded-2xl border-2 border-slate-700 shadow-2xl overflow-hidden flex flex-col min-h-[560px]">
+            
+            <!-- Tab Navigation Bar -->
+            <div class="flex border-b border-slate-700 bg-labDark/80 overflow-x-auto scrollbar-none">
+                <button onclick="switchTab('tab-body')" id="btn-tab-body" class="tab-btn flex-1 min-w-[90px] py-3 px-3 text-xs sm:text-sm font-bold text-center border-b-2 border-labAccent text-labAccent bg-labPanel transition flex flex-col sm:flex-row items-center justify-center gap-1">
+                    <span>🧬</span> <span>體型眼睛</span>
+                </button>
+                <button onclick="switchTab('tab-face')" id="btn-tab-face" class="tab-btn flex-1 min-w-[90px] py-3 px-3 text-xs sm:text-sm font-bold text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition flex flex-col sm:flex-row items-center justify-center gap-1">
+                    <span>💇‍♂️</span> <span>髮型表情</span>
+                </button>
+                <button onclick="switchTab('tab-outfit')" id="btn-tab-outfit" class="tab-btn flex-1 min-w-[90px] py-3 px-3 text-xs sm:text-sm font-bold text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition flex flex-col sm:flex-row items-center justify-center gap-1">
+                    <span>🥼</span> <span>服裝造型</span>
+                </button>
+                <button onclick="switchTab('tab-props')" id="btn-tab-props" class="tab-btn flex-1 min-w-[90px] py-3 px-3 text-xs sm:text-sm font-bold text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition flex flex-col sm:flex-row items-center justify-center gap-1">
+                    <span>🧸</span> <span>道具名牌</span>
+                </button>
+                <button onclick="switchTab('tab-export')" id="btn-tab-export" class="tab-btn flex-1 min-w-[90px] py-3 px-3 text-xs sm:text-sm font-bold text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition flex flex-col sm:flex-row items-center justify-center gap-1">
+                    <span>🖼️</span> <span>背景下載</span>
+                </button>
+            </div>
+
+            <!-- Tab Panels Container -->
+            <div class="p-5 flex-1 overflow-y-auto max-h-[520px]">
+                
+                <!-- TAB 1: Body & Eyes -->
+                <div id="tab-body" class="tab-content space-y-6">
+                    <div>
+                        <h3 class="text-sm font-bold text-labAccent uppercase tracking-wider mb-3 flex items-center gap-2">
+                            <span>1. 體型選擇 (Iconic Minion Bodies)</span>
+                        </h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button onclick="updateOption('bodyType', 'tall')" id="opt-body-tall" class="option-card p-4 rounded-xl border-2 border-slate-700 bg-labDark hover:border-labAccent/60 transition flex flex-col items-center justify-center text-center gap-2">
+                                <div class="w-10 h-16 rounded-full bg-yellow-400 border-2 border-slate-900 flex items-center justify-center font-bold text-xs text-slate-900 shadow-inner">Kevin</div>
+                                <span class="text-sm font-semibold">高瘦雙眼型 (Kevin)</span>
+                            </button>
+                            <button onclick="updateOption('bodyType', 'short')" id="opt-body-short" class="option-card p-4 rounded-xl border-2 border-slate-700 bg-labDark hover:border-labAccent/60 transition flex flex-col items-center justify-center text-center gap-2">
+                                <div class="w-14 h-12 rounded-full bg-yellow-400 border-2 border-slate-900 flex items-center justify-center font-bold text-xs text-slate-900 shadow-inner">Bob/Stuart</div>
+                                <span class="text-sm font-semibold">矮圓可愛型 (Bob/Stuart)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-700/60 pt-5">
+                        <h3 class="text-sm font-bold text-labAccent uppercase tracking-wider mb-3 flex items-center gap-2">
+                            <span>2. 眼睛與金屬護目鏡 (Goggles & Iris)</span>
+                        </h3>
+                        <div class="grid grid-cols-3 gap-3">
+                            <button onclick="updateOption('eyeType', 'single')" id="opt-eye-single" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark hover:border-labAccent/60 transition flex flex-col items-center justify-center text-center gap-2">
+                                <div class="w-10 h-10 rounded-full bg-slate-300 border-4 border-slate-500 flex items-center justify-center">
+                                    <div class="w-4 h-4 rounded-full bg-amber-800 border border-slate-900"></div>
+                                </div>
+                                <span class="text-xs font-semibold">單眼 (Stuart)</span>
+                            </button>
+                            <button onclick="updateOption('eyeType', 'double')" id="opt-eye-double" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark hover:border-labAccent/60 transition flex flex-col items-center justify-center text-center gap-2">
+                                <div class="flex gap-1">
+                                    <div class="w-7 h-7 rounded-full bg-slate-300 border-2 border-slate-500 flex items-center justify-center">
+                                        <div class="w-3 h-3 rounded-full bg-amber-800"></div>
+                                    </div>
+                                    <div class="w-7 h-7 rounded-full bg-slate-300 border-2 border-slate-500 flex items-center justify-center">
+                                        <div class="w-3 h-3 rounded-full bg-amber-800"></div>
+                                    </div>
+                                </div>
+                                <span class="text-xs font-semibold">雙眼 (Kevin)</span>
+                            </button>
+                            <button onclick="updateOption('eyeType', 'hetero')" id="opt-eye-hetero" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark hover:border-labAccent/60 transition flex flex-col items-center justify-center text-center gap-2">
+                                <div class="flex gap-1">
+                                    <div class="w-7 h-7 rounded-full bg-slate-300 border-2 border-slate-500 flex items-center justify-center">
+                                        <div class="w-3 h-3 rounded-full bg-emerald-600"></div>
+                                    </div>
+                                    <div class="w-7 h-7 rounded-full bg-slate-300 border-2 border-slate-500 flex items-center justify-center">
+                                        <div class="w-3 h-3 rounded-full bg-amber-700"></div>
+                                    </div>
+                                </div>
+                                <span class="text-xs font-semibold">異色瞳 (Bob)</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: Hair & Expressions -->
+                <div id="tab-face" class="tab-content hidden space-y-6">
+                    <div>
+                        <h3 class="text-sm font-bold text-labAccent uppercase tracking-wider mb-3">1. 經典髮型 (Hair Style)</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <button onclick="updateOption('hairType', 'sparse')" id="opt-hair-sparse" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark text-center font-medium hover:border-labAccent/60 transition">
+                                稀疏發散三毛
+                            </button>
+                            <button onclick="updateOption('hairType', 'flat')" id="opt-hair-flat" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark text-center font-medium hover:border-labAccent/60 transition">
+                                中分平梳髮型
+                            </button>
+                            <button onclick="updateOption('hairType', 'sprout')" id="opt-hair-sprout" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark text-center font-medium hover:border-labAccent/60 transition">
+                                沖天小芽髮型
+                            </button>
+                            <button onclick="updateOption('hairType', 'bald')" id="opt-hair-bald" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark text-center font-medium hover:border-labAccent/60 transition">
+                                光頭 (Bob Style)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-700/60 pt-5">
+                        <h3 class="text-sm font-bold text-labAccent uppercase tracking-wider mb-3">2. 嘴型與微表情 (Mouth & Teeth)</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <button onclick="updateOption('expression', 'smile')" id="opt-expr-smile" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark text-center font-medium hover:border-labAccent/60 transition">
+                                😁 露出上排牙齒
+                            </button>
+                            <button onclick="updateOption('expression', 'tongue')" id="opt-expr-tongue" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark text-center font-medium hover:border-labAccent/60 transition">
+                                😛 俏皮吐舌頭
+                            </button>
+                            <button onclick="updateOption('expression', 'smirk')" id="opt-expr-smirk" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark text-center font-medium hover:border-labAccent/60 transition">
+                                😏 壞笑歪嘴
+                            </button>
+                            <button onclick="updateOption('expression', 'banana')" id="opt-expr-banana" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark text-center font-medium hover:border-labAccent/60 transition">
+                                🍌 鼓鼓臉吃香蕉
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: Outfits (16 Choices Grid) -->
+                <div id="tab-outfit" class="tab-content hidden space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-sm font-bold text-labAccent uppercase tracking-wider">選擇精細向量服裝 (16 款服裝)</h3>
+                        <span class="text-xs font-mono text-slate-400">VECTOR OUTFITS</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        <button onclick="updateOption('outfit', 'overalls')" id="opt-outfit-overalls" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark hover:border-labAccent/60 text-left transition flex items-center gap-2">
+                            <span class="text-lg">👖</span> <span class="text-xs font-bold leading-tight">1. 經典牛仔吊帶褲</span>
+                        </button>
+                        <button onclick="updateOption('outfit', 'grass_skirt')" id="opt-outfit-grass_skirt" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark hover:border-labAccent/60 text-left transition flex items-center gap-2">
+                            <span class="text-lg">🌴</span> <span class="text-xs font-bold leading-tight">2. 夏威夷草裙</span>
+                        </button>
+                        <button onclick="updateOption('outfit', 'maid')" id="opt-outfit-maid" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark hover:border-labAccent/60 text-left transition flex items-center gap-2">
+                            <span class="text-lg">🧹</span> <span class="text-xs font-bold leading-tight">3. 法式女僕裝</span>
+                        </button>
+                        <button onclick="updateOption('outfit', 'king')" id="opt-outfit-king" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark hover:border-labAccent/60 text-left transition flex items-center gap-2">
+                            <span class="text-lg">👑</span> <span class="text-xs font-bold leading-tight">4. King Bob 皇冠披風</span>
+                        </button>
+                        <button onclick="updateOption('outfit', 'firefighter')" id="opt-outfit-firefighter" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark hover:border-labAccent/60 text-left transition flex items-center gap-2">
+                            <span class="text-lg">👨‍🚒</span> <span class="text-xs font-bold leading-tight">5. 消防員外套與頭盔</span>
+                        </button>
+                        <button onclick="updateOption('outfit', 'pilot')" id="opt-outfit-pilot" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark hover:border-labAccent/60 text-left transition flex items-center gap-2">
+                            <span class="text-lg">✈️</span> <span class="text-xs font-bold leading-tight">6. 帥氣機長制服</span>
+                        </button>
+                        <button onclick="updateOption('outfit', 'attendant')" id="opt-outfit-attendant" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark hover:border-labAccent/60 text-left transition flex items-center gap-2">
+                            <span class="text-lg">👩‍✈️</span> <span class="text-xs font-bold leading-tight">7. 空服員絲巾裝</span>
+                        </button>
+                        <button onclick="updateOption('outfit', 'kungfu')" id="opt-outfit-kungfu" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark hover:border-labAccent/60 text-left transition flex items-center gap-2">
+                            <span class="text-lg">🥋</span> <span class="text-xs font-bold leading-tight">8. 功夫黃色勁裝</span>
+                        </button>
+                        <button onclick="updateOption('outfit', 'knight')" id="opt-outfit-knight" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark hover:border-labAccent/60 text-left transition flex items-center gap-2">
+                            <span class="text-lg">🛡️</span> <span class="text-xs font-bold leading-tight">9. 中世紀鋼鐵騎士</span>
+                        </button>
+                        <button onclick="updateOption('outfit', 'cowboy')" id="opt-outfit-cowboy" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark hover:border-labAccent/60 text-left transition flex items-center gap-2">
+                            <span class="text-lg">🤠</span> <span class="text-xs font-bold leading-tight">10. 西部牛仔警長</span>
+                        </button>
+                        <button onclick="updateOption('outfit', 'mummy')" id="opt-outfit-mummy" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark hover:border-labAccent/60 text-left transition flex items-center gap-2">
+                            <span class="text-lg">🩹</span> <span class="text-xs font-bold leading-tight">11. 法老木乃伊繃帶</span>
+                        </button>
+                        <button onclick="updateOption('outfit', 'suit')" id="opt-outfit-suit" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark hover:border-labAccent/60 text-left transition flex items-center gap-2">
+                            <span class="text-lg">👔</span> <span class="text-xs font-bold leading-tight">12. 特務紳士西裝</span>
+                        </button>
+                        <button onclick="updateOption('outfit', 'prison')" id="opt-outfit-prison" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark hover:border-labAccent/60 text-left transition flex items-center gap-2">
+                            <span class="text-lg">⛓️</span> <span class="text-xs font-bold leading-tight">13. 監獄條紋犯人服</span>
+                        </button>
+                        <button onclick="updateOption('outfit', 'scientist')" id="opt-outfit-scientist" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark hover:border-labAccent/60 text-left transition flex items-center gap-2">
+                            <span class="text-lg">🧪</span> <span class="text-xs font-bold leading-tight">14. 瘋狂科學家白袍</span>
+                        </button>
+                        <button onclick="updateOption('outfit', 'dracula')" id="opt-outfit-dracula" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark hover:border-labAccent/60 text-left transition flex items-center gap-2">
+                            <span class="text-lg">🧛</span> <span class="text-xs font-bold leading-tight">15. 德古拉吸血鬼伯爵</span>
+                        </button>
+                        <button onclick="updateOption('outfit', 'astronaut')" id="opt-outfit-astronaut" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark hover:border-labAccent/60 text-left transition flex items-center gap-2">
+                            <span class="text-lg">👨‍🚀</span> <span class="text-xs font-bold leading-tight">16. 阿波羅太空太空服</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TAB 4: Props & Chest Nametag -->
+                <div id="tab-props" class="tab-content hidden space-y-6">
+                    <div>
+                        <h3 class="text-sm font-bold text-labAccent uppercase tracking-wider mb-3">1. 手持立體道具 (Hand Prop)</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            <button onclick="updateOption('prop', 'none')" id="opt-prop-none" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark text-center font-medium hover:border-labAccent/60 transition">
+                                ❌ 無道具
+                            </button>
+                            <button onclick="updateOption('prop', 'banana')" id="opt-prop-banana" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark text-center font-medium hover:border-labAccent/60 transition">
+                                🍌 3D 熟透香蕉
+                            </button>
+                            <button onclick="updateOption('prop', 'fartgun')" id="opt-prop-fartgun" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark text-center font-medium hover:border-labAccent/60 transition">
+                                💨 放屁槍 (Fart Gun)
+                            </button>
+                            <button onclick="updateOption('prop', 'tim')" id="opt-prop-tim" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark text-center font-medium hover:border-labAccent/60 transition">
+                                🧸 泰迪熊 Tim
+                            </button>
+                            <button onclick="updateOption('prop', 'guitar')" id="opt-prop-guitar" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark text-center font-medium hover:border-labAccent/60 transition">
+                                🎸 木吉他 (Guitar)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-700/60 pt-5">
+                        <h3 class="text-sm font-bold text-labAccent uppercase tracking-wider mb-3">2. 胸前識別證 / 專屬名牌 (Chest Badge)</h3>
+                        <div class="space-y-2">
+                            <label class="block text-xs font-mono text-slate-400">ENTER MINION NAME (MAX 12 CHARS):</label>
+                            <input type="text" id="nametag-input" value="MINION ALEX" maxlength="12" oninput="updateNametag(this.value)" class="w-full px-4 py-3 bg-labDark border-2 border-slate-700 rounded-xl text-labAccent font-mono uppercase tracking-widest focus:outline-none focus:border-labAccent transition">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 5: Background & Export -->
+                <div id="tab-export" class="tab-content hidden space-y-6">
+                    <div>
+                        <h3 class="text-sm font-bold text-labAccent uppercase tracking-wider mb-3">1. 背景風格 (Background Style)</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <button onclick="updateOption('background', 'steel')" id="opt-bg-steel" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark text-center font-medium hover:border-labAccent/60 transition">
+                                鋼鐵灰 (Lab Steel)
+                            </button>
+                            <button onclick="updateOption('background', 'hazard')" id="opt-bg-hazard" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark text-center font-medium hover:border-labAccent/60 transition">
+                                警示黃 (Hazard)
+                            </button>
+                            <button onclick="updateOption('background', 'blue')" id="opt-bg-blue" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark text-center font-medium hover:border-labAccent/60 transition">
+                                科技藍 (Lab Blue)
+                            </button>
+                            <button onclick="updateOption('background', 'banana')" id="opt-bg-banana" class="option-card p-3 rounded-xl border-2 border-slate-700 bg-labDark text-center font-medium hover:border-labAccent/60 transition">
+                                香蕉花紋 (Pattern)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-700/60 pt-5 space-y-4">
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-labDark border border-slate-700">
+                            <div>
+                                <span class="font-semibold text-sm block">透明背景 (Transparent Background)</span>
+                                <span class="text-xs text-slate-400">勾選後去背匯出高畫質向量透明 PNG</span>
+                            </div>
+                            <input type="checkbox" id="transparent-toggle" onchange="toggleTransparent(this.checked)" class="w-5 h-5 accent-labAccent rounded cursor-pointer">
+                        </div>
+
+                        <!-- Big Download Button -->
+                        <button onclick="downloadPNG()" class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-labGreen via-emerald-400 to-teal-500 text-slate-950 font-black text-lg tracking-wider uppercase shadow-xl hover:scale-[1.01] active:scale-98 transition flex items-center justify-center gap-3 border-2 border-emerald-300">
+                            <span>📥 下載高解析專屬頭像 PNG (500x500)</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-8 border-t border-slate-800 bg-labPanel py-4 text-center text-xs text-slate-500 font-mono">
+        <p>GRU'S SECRET LAB AVATAR GENERATOR • ENHANCED 3D VECTOR SHADING & AUDIO API</p>
+    </footer>
+
+    <script>
+        // Global Application State
+        const state = {
+            bodyType: 'short',     // 'tall' | 'short'
+            eyeType: 'double',     // 'single' | 'double' | 'hetero'
+            hairType: 'sparse',    // 'sparse' | 'flat' | 'sprout' | 'bald'
+            expression: 'smile',   // 'smile' | 'tongue' | 'smirk' | 'banana'
+            outfit: 'overalls',    // 16 outfit types
+            prop: 'none',          // 'none' | 'banana' | 'fartgun' | 'tim' | 'guitar'
+            nametag: 'MINION ALEX',
+            background: 'steel',   // 'steel' | 'hazard' | 'blue' | 'banana'
+            transparentBg: false,
+            soundEnabled: true
+        };
+
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    audioCtx = new AudioContext();
+                }
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playBeep(freq = 600, type = 'sine', duration = 0.06) {
+            if (!state.soundEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        function playSirenSound() {
+            if (!state.soundEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const now = ctx.currentTime;
+                
+                [0, 0.12, 0.24].forEach((delay, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(idx % 2 === 0 ? 880 : 660, now + delay);
+                    gain.gain.setValueAtTime(0.2, now + delay);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.1);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + delay);
+                    osc.stop(now + delay + 0.1);
+                });
+            } catch(e) {}
+        }
+
+        function playSuccessSound() {
+            if (!state.soundEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const now = ctx.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+                    gain.gain.setValueAtTime(0.25, now + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.2);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(now + idx * 0.08);
+                    osc.stop(now + idx * 0.08 + 0.2);
+                });
+            } catch(e) {}
+        }
+
+        function toggleSound() {
+            state.soundEnabled = !state.soundEnabled;
+            document.getElementById('sound-icon').innerText = state.soundEnabled ? '🔊' : '🔇';
+            document.getElementById('sound-text').innerText = state.soundEnabled ? 'SFX: ON' : 'SFX: OFF';
+            if (state.soundEnabled) playBeep(800);
+        }
+
+        function switchTab(tabId) {
+            playBeep(700);
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('border-labAccent', 'text-labAccent', 'bg-labPanel');
+                btn.classList.add('border-transparent', 'text-slate-400');
+            });
+
+            const activeBtn = document.getElementById('btn-' + tabId);
+            if (activeBtn) {
+                activeBtn.classList.remove('border-transparent', 'text-slate-400');
+                activeBtn.classList.add('border-labAccent', 'text-labAccent', 'bg-labPanel');
+            }
+        }
+
+        function updateOption(key, value) {
+            playBeep(550);
+            state[key] = value;
+            highlightActiveCards();
+            renderMinionSVG();
+        }
+
+        function updateNametag(val) {
+            state.nametag = val.toUpperCase();
+            renderMinionSVG();
+        }
+
+        function toggleTransparent(val) {
+            playBeep(650);
+            state.transparentBg = val;
+            renderMinionSVG();
+        }
+
+        function highlightActiveCards() {
+            document.querySelectorAll('.option-card').forEach(card => {
+                card.classList.remove('border-labAccent', 'glow-yellow', 'bg-yellow-500/10');
+                card.classList.add('border-slate-700', 'bg-labDark');
+            });
+
+            const activeMap = [
+                `opt-body-${state.bodyType}`,
+                `opt-eye-${state.eyeType}`,
+                `opt-hair-${state.hairType}`,
+                `opt-expr-${state.expression}`,
+                `opt-outfit-${state.outfit}`,
+                `opt-prop-${state.prop}`,
+                `opt-bg-${state.background}`
+            ];
+
+            activeMap.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.classList.remove('border-slate-700', 'bg-labDark');
+                    el.classList.add('border-labAccent', 'glow-yellow', 'bg-yellow-500/10');
+                }
+            });
+        }
+
+        function randomizeMinion() {
+            playSirenSound();
+            const bodyTypes = ['tall', 'short'];
+            const eyeTypes = ['single', 'double', 'hetero'];
+            const hairTypes = ['sparse', 'flat', 'sprout', 'bald'];
+            const expressions = ['smile', 'tongue', 'smirk', 'banana'];
+            const outfits = ['overalls', 'grass_skirt', 'maid', 'king', 'firefighter', 'pilot', 'attendant', 'kungfu', 'knight', 'cowboy', 'mummy', 'suit', 'prison', 'scientist', 'dracula', 'astronaut'];
+            const props = ['none', 'banana', 'fartgun', 'tim', 'guitar'];
+            const backgrounds = ['steel', 'hazard', 'blue', 'banana'];
+
+            state.bodyType = bodyTypes[Math.floor(Math.random() * bodyTypes.length)];
+            state.eyeType = eyeTypes[Math.floor(Math.random() * eyeTypes.length)];
+            state.hairType = hairTypes[Math.floor(Math.random() * hairTypes.length)];
+            state.expression = expressions[Math.floor(Math.random() * expressions.length)];
+            state.outfit = outfits[Math.floor(Math.random() * outfits.length)];
+            state.prop = props[Math.floor(Math.random() * props.length)];
+            state.background = backgrounds[Math.floor(Math.random() * backgrounds.length)];
+
+            highlightActiveCards();
+            renderMinionSVG();
+        }
+
+        function renderMinionSVG() {
+            const svg = document.getElementById('minion-svg');
+            let svgContent = '';
+
+            const isTall = state.bodyType === 'tall';
+            
+            // Adjusted Dimensions & Positioning
+            const bodyW = isTall ? 180 : 210;
+            const bodyH = isTall ? 330 : 270;
+            const bodyX = (500 - bodyW) / 2;
+            const bodyY = isTall ? 95 : 155;
+            const rx = isTall ? 90 : 105;
+
+            // Anchor Y coordinates
+            const eyeY = isTall ? 170 : 210;
+            const mouthY = isTall ? 228 : 268;
+            const outfitY = isTall ? 282 : 318;
+
+            // Global SVG Definitions (Filters, Gradients for 3D realism)
+            svgContent += `
+                <defs>
+                    <!-- Drop Shadow Filter for realistic depth -->
+                    <filter id="shadowFilter" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000000" flood-opacity="0.45"/>
+                    </filter>
+
+                    <filter id="goggleShadow" x="-30%" y="-30%" width="160%" height="160%">
+                        <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000000" flood-opacity="0.5"/>
+                    </filter>
+
+                    <!-- Minion Body 3D Cylindrical Gradient -->
+                    <radialGradient id="minionSkin3D" cx="38%" cy="30%" r="70%">
+                        <stop offset="0%" stop-color="#fff566"/>
+                        <stop offset="45%" stop-color="#ffdd00"/>
+                        <stop offset="85%" stop-color="#e6b800"/>
+                        <stop offset="100%" stop-color="#b38f00"/>
+                    </radialGradient>
+
+                    <!-- Metallic Goggle Ring Gradient -->
+                    <linearGradient id="metalGoggleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#ffffff"/>
+                        <stop offset="25%" stop-color="#cbd5e1"/>
+                        <stop offset="50%" stop-color="#64748b"/>
+                        <stop offset="75%" stop-color="#334155"/>
+                        <stop offset="100%" stop-color="#94a3b8"/>
+                    </linearGradient>
+
+                    <linearGradient id="metalInnerBevel" x1="0%" y1="100%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#1e293b"/>
+                        <stop offset="100%" stop-color="#94a3b8"/>
+                    </linearGradient>
+
+                    <!-- Guitar Wood Gradient -->
+                    <linearGradient id="guitarBodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#f59e0b"/>
+                        <stop offset="50%" stop-color="#d97706"/>
+                        <stop offset="100%" stop-color="#78350f"/>
+                    </linearGradient>
+                    <linearGradient id="guitarNeckGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#92400e"/>
+                        <stop offset="50%" stop-color="#b45309"/>
+                        <stop offset="100%" stop-color="#451a03"/>
+                    </linearGradient>
+
+                    <!-- Eyeball 3D Radial Sphere Gradient -->
+                    <radialGradient id="eyeball3D" cx="40%" cy="35%" r="60%">
+                        <stop offset="0%" stop-color="#ffffff"/>
+                        <stop offset="75%" stop-color="#f1f5f9"/>
+                        <stop offset="100%" stop-color="#cbd5e1"/>
+                    </radialGradient>
+
+                    <!-- Iris Brown Gradient -->
+                    <radialGradient id="irisBrown" cx="40%" cy="40%" r="50%">
+                        <stop offset="0%" stop-color="#b45309"/>
+                        <stop offset="70%" stop-color="#78350f"/>
+                        <stop offset="100%" stop-color="#451a03"/>
+                    </radialGradient>
+
+                    <!-- Iris Green Gradient (Bob) -->
+                    <radialGradient id="irisGreen" cx="40%" cy="40%" r="50%">
+                        <stop offset="0%" stop-color="#34d399"/>
+                        <stop offset="70%" stop-color="#059669"/>
+                        <stop offset="100%" stop-color="#064e3b"/>
+                    </radialGradient>
+
+                    <!-- Denim Fabric Texture Gradient -->
+                    <linearGradient id="denimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#2563eb"/>
+                        <stop offset="50%" stop-color="#1d4ed8"/>
+                        <stop offset="100%" stop-color="#1e3a8a"/>
+                    </linearGradient>
+
+                    <!-- Glass Lens Reflection -->
+                    <linearGradient id="glassReflection" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.6"/>
+                        <stop offset="30%" stop-color="#ffffff" stop-opacity="0.1"/>
+                        <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+                    </linearGradient>
+                </defs>
+            `;
+
+            if (!state.transparentBg) {
+                if (state.background === 'steel') {
+                    svgContent += `
+                        <defs>
+                            <linearGradient id="bgSteel" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#1b202c"/>
+                                <stop offset="50%" stop-color="#2a3142"/>
+                                <stop offset="100%" stop-color="#0f131a"/>
+                            </linearGradient>
+                        </defs>
+                        <rect width="500" height="500" fill="url(#bgSteel)"/>
+                        <circle cx="250" cy="250" r="220" fill="none" stroke="#ffd700" stroke-width="2" stroke-dasharray="10 15" opacity="0.2"/>
+                    `;
+                } else if (state.background === 'hazard') {
+                    svgContent += `
+                        <defs>
+                            <pattern id="hazardPattern" width="40" height="40" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                                <line x1="0" y1="0" x2="0" y2="40" stroke="#ffd700" stroke-width="20" />
+                                <line x1="20" y1="0" x2="20" y2="40" stroke="#0e121a" stroke-width="20" />
+                            </pattern>
+                        </defs>
+                        <rect width="500" height="500" fill="url(#hazardPattern)"/>
+                        <rect width="440" height="440" x="30" y="30" fill="#161c28" rx="20" opacity="0.92"/>
+                    `;
+                } else if (state.background === 'blue') {
+                    svgContent += `
+                        <defs>
+                            <radialGradient id="bgBlue" cx="50%" cy="50%" r="60%">
+                                <stop offset="0%" stop-color="#00f0ff" stop-opacity="0.3"/>
+                                <stop offset="100%" stop-color="#0a1128"/>
+                            </radialGradient>
+                        </defs>
+                        <rect width="500" height="500" fill="url(#bgBlue)"/>
+                        <line x1="0" y1="250" x2="500" y2="250" stroke="#00f0ff" stroke-width="1" opacity="0.2"/>
+                        <line x1="250" y1="0" x2="250" y2="500" stroke="#00f0ff" stroke-width="1" opacity="0.2"/>
+                    `;
+                } else if (state.background === 'banana') {
+                    svgContent += `
+                        <rect width="500" height="500" fill="#fef08a"/>
+                        <g opacity="0.18" fill="#ca8a04">
+                            <path d="M 50,50 Q 80,40 100,70 Q 70,80 50,50 Z"/>
+                            <path d="M 400,100 Q 430,90 450,120 Q 420,130 400,100 Z"/>
+                            <path d="M 120,400 Q 150,390 170,420 Q 140,430 120,400 Z"/>
+                            <path d="M 380,380 Q 410,370 430,400 Q 400,410 380,380 Z"/>
+                        </g>
+                    `;
+                }
+            }
+
+            if (state.outfit === 'king') {
+                svgContent += `
+                    <!-- King Velvet Cape Back Shadow & Layering -->
+                    <path d="M ${bodyX - 28} ${outfitY - 10} C ${bodyX - 50} ${outfitY + 70}, ${bodyX - 40} ${bodyY + bodyH + 20}, ${bodyX - 10} ${bodyY + bodyH + 25} L ${bodyX + bodyW + 10} ${bodyY + bodyH + 25} C ${bodyX + bodyW + 40} ${bodyY + bodyH + 20}, ${bodyX + bodyW + 50} ${outfitY + 70}, ${bodyX + bodyW + 28} ${outfitY - 10} Z" fill="#600e12" filter="url(#shadowFilter)"/>
+                    <path d="M ${bodyX - 22} ${outfitY} Q ${bodyX - 38} ${bodyY + bodyH}, ${bodyX - 5} ${bodyY + bodyH + 18} L ${bodyX + bodyW + 5} ${bodyY + bodyH + 18} Q ${bodyX + bodyW + 38} ${bodyY + bodyH}, ${bodyX + bodyW + 22} ${outfitY} Z" fill="#991b1b"/>
+                `;
+            } else if (state.outfit === 'dracula') {
+                svgContent += `
+                    <path d="M ${bodyX - 35} ${outfitY - 35} Q ${bodyX - 55} ${bodyY + bodyH}, ${bodyX - 10} ${bodyY + bodyH + 28} L ${bodyX + bodyW + 10} ${bodyY + bodyH + 28} Q ${bodyX + bodyW + 55} ${bodyY + bodyH}, ${bodyX + bodyW + 35} ${outfitY - 35} Z" fill="#090d16" filter="url(#shadowFilter)"/>
+                `;
+            }
+
+            svgContent += `
+                <!-- Black Legs & Detailed Boots -->
+                <g id="minion-legs">
+                    <rect x="${250 - 44}" y="${bodyY + bodyH - 15}" width="26" height="45" fill="#1e293b" rx="6"/>
+                    <rect x="${250 + 18}" y="${bodyY + bodyH - 15}" width="26" height="45" fill="#1e293b" rx="6"/>
+                    
+                    <!-- Curved 3D Leather Boots -->
+                    <path d="M ${250 - 62} ${bodyY + bodyH + 32} Q ${250 - 62} ${bodyY + bodyH + 14} ${250 - 38} ${bodyY + bodyH + 14} L ${250 - 14} ${bodyY + bodyH + 14} L ${250 - 14} ${bodyY + bodyH + 34} Z" fill="#090d16" filter="url(#shadowFilter)"/>
+                    <path d="M ${250 + 14} ${bodyY + bodyH + 14} L ${250 + 38} ${bodyY + bodyH + 14} Q ${250 + 62} ${bodyY + bodyH + 14} ${250 + 62} ${bodyY + bodyH + 32} L ${250 + 14} ${bodyY + bodyH + 34} Z" fill="#090d16" filter="url(#shadowFilter)"/>
+                    
+                    <!-- Boot Sole Highlights -->
+                    <path d="M ${250 - 60} ${bodyY + bodyH + 30} L ${250 - 16} ${bodyY + bodyH + 30}" stroke="#334155" stroke-width="2"/>
+                    <path d="M ${250 + 16} ${bodyY + bodyH + 30} L ${250 + 60} ${bodyY + bodyH + 30}" stroke="#334155" stroke-width="2"/>
+                </g>
+            `;
+
+            svgContent += `
+                <g id="minion-body" filter="url(#shadowFilter)">
+                    <!-- Main Body Fill with Radial Shading -->
+                    <rect x="${bodyX}" y="${bodyY}" width="${bodyW}" height="${bodyH}" rx="${rx}" fill="url(#minionSkin3D)" stroke="#ca8a04" stroke-width="2"/>
+                    
+                    <!-- Ambient Occlusion Drop Shadow on Bottom Body Curve -->
+                    <path d="M ${bodyX + 5} ${bodyY + bodyH - rx} A ${rx} ${rx} 0 0 0 ${bodyX + bodyW - 5} ${bodyY + bodyH - rx} Z" fill="#000000" opacity="0.15"/>
+                    
+                    <!-- Top Body Radial Soft Highlight -->
+                    <ellipse cx="${250}" cy="${bodyY + 30}" rx="${rx - 20}" ry="20" fill="#ffffff" opacity="0.25"/>
+                </g>
+            `;
+
+            svgContent += `<g id="minion-hair">`;
+            const hairTopY = bodyY + 3;
+            if (state.hairType === 'sparse') {
+                svgContent += `
+                    <path d="M 225 ${hairTopY} Q 210 ${hairTopY - 28} 195 ${hairTopY - 38}" stroke="#1e293b" stroke-width="4" fill="none" stroke-linecap="round"/>
+                    <path d="M 238 ${hairTopY} Q 230 ${hairTopY - 32} 220 ${hairTopY - 45}" stroke="#1e293b" stroke-width="4" fill="none" stroke-linecap="round"/>
+                    <path d="M 250 ${hairTopY} Q 250 ${hairTopY - 35} 250 ${hairTopY - 48}" stroke="#1e293b" stroke-width="4" fill="none" stroke-linecap="round"/>
+                    <path d="M 262 ${hairTopY} Q 270 ${hairTopY - 32} 280 ${hairTopY - 45}" stroke="#1e293b" stroke-width="4" fill="none" stroke-linecap="round"/>
+                    <path d="M 275 ${hairTopY} Q 290 ${hairTopY - 28} 305 ${hairTopY - 38}" stroke="#1e293b" stroke-width="4" fill="none" stroke-linecap="round"/>
+                `;
+            } else if (state.hairType === 'flat') {
+                for (let x = 195; x <= 305; x += 11) {
+                    svgContent += `<path d="M ${x} ${hairTopY + 6} Q ${250 + (x-250)*0.5} ${hairTopY - 18} ${x} ${hairTopY - 20}" stroke="#1e293b" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+                }
+            } else if (state.hairType === 'sprout') {
+                svgContent += `
+                    <path d="M 250 ${hairTopY + 2} C 235 ${hairTopY - 25}, 210 ${hairTopY - 20}, 212 ${hairTopY - 46}" stroke="#1e293b" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+                    <path d="M 250 ${hairTopY + 2} C 265 ${hairTopY - 25}, 290 ${hairTopY - 20}, 288 ${hairTopY - 46}" stroke="#1e293b" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+                `;
+            }
+            svgContent += `</g>`;
+
+            svgContent += `<g id="minion-eyes">`;
+            
+            // Black Leather Goggle Strap with Stitching
+            svgContent += `
+                <g filter="url(#shadowFilter)">
+                    <rect x="${bodyX - 3}" y="${eyeY - 16}" width="${bodyW + 6}" height="32" fill="#0f172a" rx="5"/>
+                    <line x1="${bodyX - 3}" y1="${eyeY - 12}" x2="${bodyX + bodyW + 3}" y2="${eyeY - 12}" stroke="#334155" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <line x1="${bodyX - 3}" y1="${eyeY + 12}" x2="${bodyX + bodyW + 3}" y2="${eyeY + 12}" stroke="#334155" stroke-width="1.5" stroke-dasharray="4 3"/>
+                </g>
+            `;
+
+            if (state.eyeType === 'single') {
+                // Large Center Eye (Stuart)
+                svgContent += `
+                    <g filter="url(#goggleShadow)">
+                        <!-- Outer Metallic Ring -->
+                        <circle cx="250" cy="${eyeY}" r="48" fill="url(#metalGoggleGrad)" stroke="#334155" stroke-width="2"/>
+                        <circle cx="250" cy="${eyeY}" r="40" fill="url(#metalInnerBevel)"/>
+                        
+                        <!-- Eyeball Sphere -->
+                        <circle cx="250" cy="${eyeY}" r="36" fill="url(#eyeball3D)"/>
+                        
+                        <!-- Iris & Pupil -->
+                        <circle cx="250" cy="${eyeY}" r="17" fill="url(#irisBrown)"/>
+                        <circle cx="250" cy="${eyeY}" r="8" fill="#090d16"/>
+                        
+                        <!-- Glass Light Specular Reflection -->
+                        <path d="M 220 ${eyeY - 25} A 36 36 0 0 1 278 ${eyeY - 22} Z" fill="url(#glassReflection)"/>
+                        <circle cx="243" cy="${eyeY - 6}" r="4.5" fill="#ffffff"/>
+                        <circle cx="256" cy="${eyeY + 6}" r="2" fill="#ffffff" opacity="0.8"/>
+                        
+                        <!-- Metallic Rivets on Goggle Screws -->
+                        <circle cx="200" cy="${eyeY}" r="3" fill="#cbd5e1" stroke="#1e293b" stroke-width="1"/>
+                        <circle cx="300" cy="${eyeY}" r="3" fill="#cbd5e1" stroke="#1e293b" stroke-width="1"/>
+                    </g>
+                `;
+            } else {
+                // Double Eyes (Kevin / Bob)
+                const leftIris = state.eyeType === 'hetero' ? 'url(#irisGreen)' : 'url(#irisBrown)';
+                const rightIris = 'url(#irisBrown)';
+
+                svgContent += `
+                    <g filter="url(#goggleShadow)">
+                        <!-- Left Eye Metallic Ring -->
+                        <circle cx="216" cy="${eyeY}" r="37" fill="url(#metalGoggleGrad)" stroke="#334155" stroke-width="2"/>
+                        <circle cx="216" cy="${eyeY}" r="30" fill="url(#metalInnerBevel)"/>
+                        <circle cx="216" cy="${eyeY}" r="27" fill="url(#eyeball3D)"/>
+                        <circle cx="220" cy="${eyeY}" r="13" fill="${leftIris}"/>
+                        <circle cx="220" cy="${eyeY}" r="6" fill="#090d16"/>
+                        <path d="M 194 ${eyeY - 18} A 27 27 0 0 1 238 ${eyeY - 15} Z" fill="url(#glassReflection)"/>
+                        <circle cx="215" cy="${eyeY - 4}" r="3.5" fill="#ffffff"/>
+
+                        <!-- Right Eye Metallic Ring -->
+                        <circle cx="284" cy="${eyeY}" r="37" fill="url(#metalGoggleGrad)" stroke="#334155" stroke-width="2"/>
+                        <circle cx="284" cy="${eyeY}" r="30" fill="url(#metalInnerBevel)"/>
+                        <circle cx="284" cy="${eyeY}" r="27" fill="url(#eyeball3D)"/>
+                        <circle cx="280" cy="${eyeY}" r="13" fill="${rightIris}"/>
+                        <circle cx="280" cy="${eyeY}" r="6" fill="#090d16"/>
+                        <path d="M 262 ${eyeY - 18} A 27 27 0 0 1 306 ${eyeY - 15} Z" fill="url(#glassReflection)"/>
+                        <circle cx="276" cy="${eyeY - 4}" r="3.5" fill="#ffffff"/>
+
+                        <!-- Goggle Connector Bridge -->
+                        <rect x="246" y="${eyeY - 8}" width="8" height="16" fill="url(#metalGoggleGrad)" rx="2"/>
+                    </g>
+                `;
+            }
+            svgContent += `</g>`;
+
+            svgContent += `<g id="minion-mouth">`;
+            if (state.expression === 'smile') {
+                svgContent += `
+                    <!-- Open Smiling Mouth with Upper Teeth -->
+                    <path d="M 212 ${mouthY} Q 250 ${mouthY + 32} 288 ${mouthY} C 280 ${mouthY + 28}, 220 ${mouthY + 28}, 212 ${mouthY} Z" fill="#581c87" stroke="#2e1065" stroke-width="2.5"/>
+                    <path d="M 216 ${mouthY + 2} Q 250 ${mouthY + 12} 284 ${mouthY + 2} L 282 ${mouthY + 10} Q 250 ${mouthY + 18} 218 ${mouthY + 10} Z" fill="#ffffff"/>
+                    <path d="M 230 ${mouthY + 18} Q 250 ${mouthY + 30} 270 ${mouthY + 18}" fill="#f43f5e"/>
+                `;
+            } else if (state.expression === 'tongue') {
+                svgContent += `
+                    <path d="M 215 ${mouthY} Q 250 ${mouthY + 30} 285 ${mouthY} Z" fill="#581c87" stroke="#222" stroke-width="2.5"/>
+                    <path d="M 235 ${mouthY + 8} Q 250 ${mouthY + 32} 265 ${mouthY + 8} Q 250 ${mouthY + 2} 235 ${mouthY + 8} Z" fill="#fb7185" stroke="#e11d48" stroke-width="1.5"/>
+                `;
+            } else if (state.expression === 'smirk') {
+                // FIXED ISSUE 2: Smirk mouth opening curves upward (positive smile arc + raised right corner)
+                svgContent += `
+                    <path d="M 218 ${mouthY + 4} Q 248 ${mouthY + 16} 282 ${mouthY - 6}" stroke="#1e293b" stroke-width="4" fill="none" stroke-linecap="round"/>
+                    <path d="M 282 ${mouthY - 6} L 286 ${mouthY - 12}" stroke="#1e293b" stroke-width="3.5" stroke-linecap="round"/>
+                    <path d="M 224 ${mouthY + 6} Q 252 ${mouthY + 28} 280 ${mouthY - 2} Z" fill="#581c87" opacity="0.85"/>
+                    <path d="M 232 ${mouthY + 8} Q 252 ${mouthY + 16} 274 ${mouthY + 2}" fill="#ffffff"/>
+                `;
+            } else if (state.expression === 'banana') {
+                // FIXED ISSUE 3: Eating Banana with Bulging Puffy Cheek instead of blocking mouth
+                svgContent += `
+                    <!-- Puffy Stuffed Cheek Arc on Right Side -->
+                    <path d="M ${bodyX + bodyW - 12} ${mouthY - 18} Q ${bodyX + bodyW + 28} ${mouthY + 5} ${bodyX + bodyW - 20} ${mouthY + 28} Z" fill="url(#minionSkin3D)" stroke="#ca8a04" stroke-width="2"/>
+                    <!-- Cute Blush Shadow on Puffy Cheek -->
+                    <ellipse cx="${bodyX + bodyW + 4}" cy="${mouthY + 5}" rx="11" ry="8" fill="#f43f5e" opacity="0.25"/>
+                    <!-- Chewing Smile Mouth -->
+                    <path d="M 218 ${mouthY + 4} Q 248 ${mouthY + 22} 274 ${mouthY + 6}" fill="none" stroke="#1e293b" stroke-width="4" stroke-linecap="round"/>
+                    <!-- Small Banana Tip Sticking Out from Mouth Corner -->
+                    <g filter="url(#shadowFilter)">
+                        <path d="M 210 ${mouthY + 1} Q 192 ${mouthY - 12} 184 ${mouthY + 8} Q 200 ${mouthY + 14} 214 ${mouthY + 6} Z" fill="#facc15" stroke="#ca8a04" stroke-width="1.5"/>
+                        <path d="M 184 ${mouthY + 8} L 180 ${mouthY + 12}" stroke="#854d0e" stroke-width="3" stroke-linecap="round"/>
+                    </g>
+                `;
+            }
+            svgContent += `</g>`;
+
+            svgContent += `<g id="minion-outfit" filter="url(#shadowFilter)">`;
+            
+            const oW = bodyW;
+            const oX = bodyX;
+
+            switch (state.outfit) {
+                case 'overalls': // 1. Iconic Blue Denim Overalls
+                    svgContent += `
+                        <!-- Denim Pants Main Body -->
+                        <path d="M ${oX} ${outfitY + 20} C ${oX} ${outfitY + 10}, ${oX + 20} ${outfitY + 5}, ${oX + 30} ${outfitY + 5} L ${oX + oW - 30} ${outfitY + 5} C ${oX + oW - 20} ${outfitY + 5}, ${oX + oW} ${outfitY + 10}, ${oX + oW} ${outfitY + 20} L ${oX + oW} ${bodyY + bodyH - 12} Q ${oX + oW / 2} ${bodyY + bodyH + 8} ${oX} ${bodyY + bodyH - 12} Z" fill="url(#denimGrad)"/>
+                        
+                        <!-- Denim Bib Panel -->
+                        <path d="M ${250 - 54} ${outfitY - 18} L ${250 + 54} ${outfitY - 18} L ${250 + 60} ${outfitY + 25} L ${250 - 60} ${outfitY + 25} Z" fill="#1d4ed8"/>
+                        
+                        <!-- Overalls Shoulder Straps -->
+                        <path d="M ${oX + 6} ${outfitY - 45} L ${oX + 26} ${outfitY - 45} L ${250 - 40} ${outfitY - 14} L ${250 - 54} ${outfitY - 14} Z" fill="#1e3a8a"/>
+                        <path d="M ${oX + oW - 6} ${outfitY - 45} L ${oX + oW - 26} ${outfitY - 45} L ${250 + 40} ${outfitY - 14} L ${250 + 54} ${outfitY - 14} Z" fill="#1e3a8a"/>
+                        
+                        <!-- Yellow Stitching Seams -->
+                        <path d="M ${250 - 50} ${outfitY - 14} L ${250 + 50} ${outfitY - 14}" stroke="#fbbf24" stroke-width="1.8" stroke-dasharray="3 2" fill="none"/>
+                        <path d="M ${250 - 30} ${outfitY - 2} L ${250 + 30} ${outfitY - 2} L ${250 + 30} ${outfitY + 22} L ${250 - 30} ${outfitY + 22} Z" fill="none" stroke="#fbbf24" stroke-width="1.8" stroke-dasharray="3 2"/>
+
+                        <!-- Center Pocket -->
+                        <path d="M ${250 - 28} ${outfitY} L ${250 + 28} ${outfitY} L ${250 + 24} ${outfitY + 22} L ${250} ${outfitY + 28} L ${250 - 24} ${outfitY + 22} Z" fill="#1e3a8a"/>
+                        
+                        <!-- Gru Embossed Shield Logo -->
+                        <circle cx="250" cy="${outfitY + 12}" r="12" fill="#0f172a" stroke="#fbbf24" stroke-width="1.5"/>
+                        <text x="250" y="${outfitY + 16}" font-size="13" font-weight="900" fill="#fbbf24" text-anchor="middle" font-family="sans-serif">G</text>
+
+                        <!-- Metallic Fastener Buttons -->
+                        <circle cx="${250 - 46}" cy="${outfitY - 8}" r="5.5" fill="url(#metalGoggleGrad)" stroke="#1e293b" stroke-width="1"/>
+                        <circle cx="${250 + 46}" cy="${outfitY - 8}" r="5.5" fill="url(#metalGoggleGrad)" stroke="#1e293b" stroke-width="1"/>
+                    `;
+                    break;
+
+                case 'grass_skirt': // 2. Hawaiian Grass Skirt & Flower Lei
+                    svgContent += `
+                        <!-- Flower Lei -->
+                        <g id="lei">
+                            <circle cx="205" cy="${outfitY - 25}" r="10" fill="#f43f5e"/><circle cx="205" cy="${outfitY - 25}" r="3.5" fill="#fde047"/>
+                            <circle cx="226" cy="${outfitY - 18}" r="10" fill="#fbbf24"/><circle cx="226" cy="${outfitY - 18}" r="3.5" fill="#ffffff"/>
+                            <circle cx="250" cy="${outfitY - 12}" r="11" fill="#ec4899"/><circle cx="250" cy="${outfitY - 12}" r="4" fill="#fde047"/>
+                            <circle cx="274" cy="${outfitY - 18}" r="10" fill="#3b82f6"/><circle cx="274" cy="${outfitY - 18}" r="3.5" fill="#ffffff"/>
+                            <circle cx="295" cy="${outfitY - 25}" r="10" fill="#10b981"/><circle cx="295" cy="${outfitY - 25}" r="3.5" fill="#fde047"/>
+                        </g>
+                        <path d="M ${oX - 10} ${outfitY + 20} Q 250 ${outfitY + 30} ${oX + oW + 10} ${outfitY + 20} L ${oX + oW + 5} ${bodyY + bodyH + 5} Q 250 ${bodyY + bodyH + 15} ${oX - 5} ${bodyY + bodyH + 5} Z" fill="#65a30d"/>
+                        <path d="M ${oX} ${outfitY + 20} L ${oX + 15} ${bodyY + bodyH + 5} M ${oX + 30} ${outfitY + 22} L ${oX + 45} ${bodyY + bodyH + 5} M ${oX + 60} ${outfitY + 24} L ${oX + 75} ${bodyY + bodyH + 5} M ${oX + 90} ${outfitY + 25} L ${oX + 100} ${bodyY + bodyH + 5} M ${oX + 120} ${outfitY + 24} L ${oX + 130} ${bodyY + bodyH + 5} M ${oX + 150} ${outfitY + 22} L ${oX + 165} ${bodyY + bodyH + 5} M ${oX + 175} ${outfitY + 20} L ${oX + 180} ${bodyY + bodyH + 5}" stroke="#3f6212" stroke-width="5" stroke-linecap="round"/>
+                    `;
+                    break;
+
+                case 'maid': // 3. Maid Dress
+                    svgContent += `
+                        <path d="M ${oX} ${outfitY - 15} Q 250 ${outfitY - 5} ${oX + oW} ${outfitY - 15} L ${oX + oW} ${bodyY + bodyH} L ${oX} ${bodyY + bodyH} Z" fill="#0f172a"/>
+                        <path d="M ${250 - 42} ${outfitY - 10} L ${250 + 42} ${outfitY - 10} L ${250 + 58} ${bodyY + bodyH} L ${250 - 58} ${bodyY + bodyH} Z" fill="#f8fafc"/>
+                        <path d="M ${250 - 48} ${outfitY - 10} Q ${250} ${outfitY - 2} ${250 + 48} ${outfitY - 10}" fill="none" stroke="#cbd5e1" stroke-width="4" stroke-dasharray="6 3"/>
+                    `;
+                    break;
+
+                case 'king': // 4. King Bob Royal Outfit
+                    svgContent += `
+                        <path d="M ${oX - 18} ${outfitY - 15} Q 250 ${outfitY + 10} ${oX + oW + 18} ${outfitY - 15} L ${oX + oW + 12} ${outfitY + 16} Q 250 ${outfitY + 36} ${oX - 12} ${outfitY + 16} Z" fill="#f8fafc"/>
+                        <circle cx="${250 - 65}" cy="${outfitY + 2}" r="2.5" fill="#0f172a"/>
+                        <circle cx="${250 - 30}" cy="${outfitY + 12}" r="2.5" fill="#0f172a"/>
+                        <circle cx="${250 + 30}" cy="${outfitY + 12}" r="2.5" fill="#0f172a"/>
+                        <circle cx="${250 + 65}" cy="${outfitY + 2}" r="2.5" fill="#0f172a"/>
+                        <!-- Gold Crown -->
+                        <g id="crown">
+                            <path d="M 185 ${bodyY - 8} L 195 ${bodyY - 58} L 222 ${bodyY - 32} L 250 ${bodyY - 68} L 278 ${bodyY - 32} L 305 ${bodyY - 58} L 315 ${bodyY - 8} Z" fill="#fbbf24" stroke="#b45309" stroke-width="3"/>
+                            <rect x="185" y="${bodyY - 14}" width="130" height="14" fill="#d97706" rx="2"/>
+                            <circle cx="195" cy="${bodyY - 52}" r="4.5" fill="#dc2626"/>
+                            <circle cx="250" cy="${bodyY - 62}" r="6" fill="#2563eb"/>
+                            <circle cx="305" cy="${bodyY - 52}" r="4.5" fill="#dc2626"/>
+                        </g>
+                    `;
+                    break;
+
+                case 'firefighter': // 5. Firefighter Coat & Helmet
+                    svgContent += `
+                        <path d="M ${oX} ${outfitY - 10} L ${oX + oW} ${outfitY - 10} L ${oX + oW} ${bodyY + bodyH} L ${oX} ${bodyY + bodyH} Z" fill="#b45309"/>
+                        <path d="M ${oX} ${outfitY + 25} L ${oX + oW} ${outfitY + 25}" stroke="#f8fafc" stroke-width="12"/>
+                        <path d="M ${oX} ${outfitY + 25} L ${oX + oW} ${outfitY + 25}" stroke="#facc15" stroke-width="4"/>
+                        <!-- Helmet -->
+                        <path d="M 170 ${bodyY + 8} Q 250 ${bodyY - 60} 330 ${bodyY + 8} Z" fill="#dc2626" stroke="#991b1b" stroke-width="2"/>
+                        <rect x="160" y="${bodyY + 5}" width="180" height="12" fill="#b91c1c" rx="4"/>
+                    `;
+                    break;
+
+                case 'pilot': // 6. Pilot Uniform
+                    svgContent += `
+                        <path d="M ${oX} ${outfitY - 15} L ${oX + oW} ${outfitY - 15} L ${oX + oW} ${bodyY + bodyH} L ${oX} ${bodyY + bodyH} Z" fill="#1e293b"/>
+                        <polygon points="250,${outfitY + 45} ${250 - 32},${outfitY - 15} ${250 + 32},${outfitY - 15}" fill="#ffffff"/>
+                        <polygon points="250,${outfitY - 5} ${250 - 9},${outfitY + 38} 250,${outfitY + 55} ${250 + 9},${outfitY + 38}" fill="#0f172a"/>
+                    `;
+                    break;
+
+                case 'attendant': // 7. Flight Attendant Scarf
+                    svgContent += `
+                        <path d="M ${oX} ${outfitY - 15} L ${oX + oW} ${outfitY - 15} L ${oX + oW} ${bodyY + bodyH} L ${oX} ${bodyY + bodyH} Z" fill="#0369a1"/>
+                        <polygon points="250,${outfitY + 30} ${250 - 25},${outfitY - 15} ${250 + 25},${outfitY - 15}" fill="#ffffff"/>
+                        <path d="M 235 ${outfitY - 12} Q 250 ${outfitY + 8} 265 ${outfitY - 12} Q 250 ${outfitY + 20} 235 ${outfitY - 12}" fill="#facc15" stroke="#ca8a04" stroke-width="1.5"/>
+                    `;
+                    break;
+
+                case 'kungfu': // 8. Bruce Lee Jumpsuit
+                    svgContent += `
+                        <path d="M ${oX} ${outfitY - 20} L ${oX + oW} ${outfitY - 20} L ${oX + oW} ${bodyY + bodyH} L ${oX} ${bodyY + bodyH} Z" fill="#eab308"/>
+                        <path d="M ${oX + 12} ${outfitY - 20} L ${oX + 12} ${bodyY + bodyH}" stroke="#0f172a" stroke-width="10"/>
+                        <path d="M ${oX + oW - 12} ${outfitY - 20} L ${oX + oW - 12} ${bodyY + bodyH}" stroke="#0f172a" stroke-width="10"/>
+                        <line x1="250" y1="${outfitY - 20}" x2="250" y2="${bodyY + bodyH}" stroke="#0f172a" stroke-width="3"/>
+                    `;
+                    break;
+
+                case 'knight': // 9. Knight Armor
+                    svgContent += `
+                        <path d="M ${oX} ${outfitY - 15} L ${oX + oW} ${outfitY - 15} L ${oX + oW - 10} ${bodyY + bodyH} L ${oX + 10} ${bodyY + bodyH} Z" fill="#64748b"/>
+                        <path d="M 250 ${outfitY - 15} L 250 ${bodyY + bodyH}" stroke="#334155" stroke-width="3"/>
+                        <circle cx="${250 - 30}" cy="${outfitY + 10}" r="3" fill="#cbd5e1"/>
+                        <circle cx="${250 + 30}" cy="${outfitY + 10}" r="3" fill="#cbd5e1"/>
+                    `;
+                    break;
+
+                case 'cowboy': // 10. Cowboy Vest & Badge
+                    svgContent += `
+                        <rect x="${oX}" y="${outfitY - 15}" width="${oW}" height="100" fill="#dc2626"/>
+                        <path d="M ${oX} ${outfitY - 15} L ${250 - 25} ${outfitY - 15} L ${250 - 35} ${bodyY + bodyH} L ${oX} ${bodyY + bodyH} Z" fill="#b45309"/>
+                        <path d="M ${oX + oW} ${outfitY - 15} L ${250 + 25} ${outfitY - 15} L ${250 + 35} ${bodyY + bodyH} L ${oX + oW} ${bodyY + bodyH} Z" fill="#b45309"/>
+                        <polygon points="220,${outfitY + 15} 223,${outfitY + 23} 231,${outfitY + 23} 225,${outfitY + 28} 227,${outfitY + 36} 220,${outfitY + 31} 213,${outfitY + 36} 215,${outfitY + 28} 209,${outfitY + 23} 217,${outfitY + 23}" fill="#fbbf24" stroke="#d97706" stroke-width="1"/>
+                    `;
+                    break;
+
+                case 'mummy': // 11. Mummy Bandages
+                    svgContent += `
+                        <g stroke="#e2e8f0" stroke-width="13" stroke-linecap="round" fill="none">
+                            <path d="M ${oX - 5} ${outfitY - 10} Q 250 ${outfitY - 5} ${oX + oW + 5} ${outfitY + 5}" />
+                            <path d="M ${oX - 5} ${outfitY + 15} L ${oX + oW + 5} ${outfitY + 28}" stroke="#cbd5e1" />
+                            <path d="M ${oX - 5} ${outfitY + 45} L ${oX + oW + 5} ${outfitY + 35}" />
+                        </g>
+                    `;
+                    break;
+
+                case 'suit': // 12. Secret Agent Suit
+                    svgContent += `
+                        <path d="M ${oX} ${outfitY - 15} L ${oX + oW} ${outfitY - 15} L ${oX + oW} ${bodyY + bodyH} L ${oX} ${bodyY + bodyH} Z" fill="#020617"/>
+                        <polygon points="250,${outfitY + 50} ${250 - 35},${outfitY - 15} ${250 + 35},${outfitY - 15}" fill="#ffffff"/>
+                        <polygon points="250,${outfitY - 8} 242,${outfitY + 42} 250,${outfitY + 65} 258,${outfitY + 42}" fill="#b91c1c"/>
+                    `;
+                    break;
+
+                case 'prison': // 13. Prison Striped Uniform
+                    svgContent += `
+                        <path d="M ${oX} ${outfitY - 15} L ${oX + oW} ${outfitY - 15} L ${oX + oW} ${bodyY + bodyH} L ${oX} ${bodyY + bodyH} Z" fill="#f8fafc"/>
+                        <rect x="${250 - 65}" y="${outfitY - 15}" width="22" height="120" fill="#0f172a"/>
+                        <rect x="${250 - 11}" y="${outfitY - 15}" width="22" height="120" fill="#0f172a"/>
+                        <rect x="${250 + 43}" y="${outfitY - 15}" width="22" height="120" fill="#0f172a"/>
+                        <rect x="205" y="${outfitY + 12}" width="90" height="22" fill="#ffffff" stroke="#000" stroke-width="2" rx="2"/>
+                        <text x="250" y="${outfitY + 27}" font-size="12" font-weight="bold" font-family="monospace" fill="#000" text-anchor="middle">004291</text>
+                    `;
+                    break;
+
+                case 'scientist': // 14. Mad Scientist Coat
+                    svgContent += `
+                        <rect x="${oX}" y="${outfitY - 15}" width="${oW}" height="120" fill="#334155"/>
+                        <path d="M ${oX} ${outfitY - 15} L ${250 - 25} ${outfitY - 15} L ${250 - 30} ${bodyY + bodyH} L ${oX} ${bodyY + bodyH} Z" fill="#f1f5f9"/>
+                        <path d="M ${oX + oW} ${outfitY - 15} L ${250 + 25} ${outfitY - 15} L ${250 + 30} ${bodyY + bodyH} L ${oX + oW} ${bodyY + bodyH} Z" fill="#f1f5f9"/>
+                    `;
+                    break;
+
+                case 'dracula': // 15. Dracula Cape Collar
+                    svgContent += `
+                        <path d="M ${oX - 10} ${outfitY - 55} L ${oX + 25} ${outfitY - 10} L ${oX + oW - 25} ${outfitY - 10} L ${oX + oW + 10} ${outfitY - 55} Z" fill="#b91c1c"/>
+                        <path d="M ${oX} ${outfitY - 10} L ${oX + oW} ${outfitY - 10} L ${oX + oW} ${bodyY + bodyH} L ${oX} ${bodyY + bodyH} Z" fill="#090d16"/>
+                        <circle cx="250" cy="${outfitY + 15}" r="11" fill="#dc2626" stroke="#fbbf24" stroke-width="2.5"/>
+                    `;
+                    break;
+
+                case 'astronaut': // 16. Astronaut Space Suit
+                    svgContent += `
+                        <path d="M ${oX} ${outfitY - 15} L ${oX + oW} ${outfitY - 15} L ${oX + oW} ${bodyY + bodyH} L ${oX} ${bodyY + bodyH} Z" fill="#f1f5f9" rx="10"/>
+                        <rect x="${oX + 15}" y="${outfitY - 18}" width="${oW - 30}" height="12" fill="#0284c7" rx="4"/>
+                        <rect x="215" y="${outfitY + 10}" width="70" height="40" fill="#cbd5e1" stroke="#475569" stroke-width="2" rx="4"/>
+                    `;
+                    break;
+            }
+
+            // Chest Badge (Nametag Option)
+            if (state.nametag && state.nametag.trim() !== "") {
+                const tagW = 104;
+                const tagH = 22;
+                const tagX = 250 - tagW / 2;
+                const tagY = outfitY + 40;
+
+                svgContent += `
+                    <g id="chest-nametag">
+                        <rect x="${tagX}" y="${tagY}" width="${tagW}" height="${tagH}" fill="#ffffff" stroke="#1e293b" stroke-width="2" rx="3"/>
+                        <rect x="${tagX}" y="${tagY}" width="${tagW}" height="6" fill="#dc2626"/>
+                        <text x="250" y="${tagY + 17}" font-size="10" font-weight="bold" font-family="monospace" fill="#0f172a" text-anchor="middle">${escapeHTML(state.nametag)}</text>
+                    </g>
+                `;
+            }
+
+            svgContent += `</g>`; // End Outfit Group
+
+            svgContent += `<g id="minion-props">`;
+            const armY = outfitY;
+            
+            // Black Gloved Arms
+            svgContent += `
+                <path d="M ${bodyX + 10} ${armY} Q ${bodyX - 35} ${armY + 30} ${bodyX - 25} ${armY + 52}" stroke="#0f172a" stroke-width="16" fill="none" stroke-linecap="round"/>
+                <path d="M ${bodyX + bodyW - 10} ${armY} Q ${bodyX + bodyW + 35} ${armY + 30} ${bodyX + bodyW + 25} ${armY + 52}" stroke="#0f172a" stroke-width="16" fill="none" stroke-linecap="round"/>
+            `;
+
+            if (state.prop === 'banana') {
+                svgContent += `
+                    <g filter="url(#shadowFilter)">
+                        <path d="M ${bodyX + bodyW + 15} ${armY + 22} C ${bodyX + bodyW + 52} ${armY + 12}, ${bodyX + bodyW + 58} ${armY + 68}, ${bodyX + bodyW + 15} ${armY + 58} C ${bodyX + bodyW + 38} ${armY + 52}, ${bodyX + bodyW + 38} ${armY + 22}, ${bodyX + bodyW + 15} ${armY + 22} Z" fill="#facc15" stroke="#ca8a04" stroke-width="2"/>
+                        <path d="M ${bodyX + bodyW + 15} ${armY + 22} L ${bodyX + bodyW + 10} ${armY + 16}" stroke="#4d7c0f" stroke-width="3.5" stroke-linecap="round"/>
+                    </g>
+                `;
+            } else if (state.prop === 'fartgun') {
+                svgContent += `
+                    <g filter="url(#shadowFilter)">
+                        <rect x="${bodyX + bodyW + 10}" y="${armY + 28}" width="44" height="16" fill="#64748b" rx="3"/>
+                        <path d="M ${bodyX + bodyW + 50} ${armY + 18} C ${bodyX + bodyW + 74} ${armY + 18}, ${bodyX + bodyW + 74} ${armY + 54}, ${bodyX + bodyW + 50} ${armY + 54} Z" fill="#ec4899" stroke="#be123c" stroke-width="2"/>
+                        <circle cx="${bodyX + bodyW + 68}" cy="${armY + 36}" r="7" fill="#00f0ff" opacity="0.6"/>
+                    </g>
+                `;
+            } else if (state.prop === 'tim') {
+                svgContent += `
+                    <g filter="url(#shadowFilter)">
+                        <circle cx="${bodyX - 32}" cy="${armY + 50}" r="22" fill="#78350f" stroke="#451a03" stroke-width="2"/>
+                        <circle cx="${bodyX - 46}" cy="${armY + 34}" r="8" fill="#78350f"/>
+                        <circle cx="${bodyX - 18}" cy="${armY + 34}" r="8" fill="#78350f"/>
+                        <circle cx="${bodyX - 38}" cy="${armY + 46}" r="3.5" fill="#fde047"/>
+                        <circle cx="${bodyX - 26}" cy="${armY + 46}" r="3.5" fill="#fde047"/>
+                        <circle cx="${bodyX - 32}" cy="${armY + 54}" r="6" fill="#fef08a"/>
+                    </g>
+                `;
+            } else if (state.prop === 'guitar') {
+                // FIXED ISSUE 1: Rebuilt clear acoustic wooden guitar held in minion's hands
+                const gX = 250;
+                const gY = armY + 35;
+                svgContent += `
+                    <g filter="url(#shadowFilter)">
+                        <!-- Wooden Guitar Neck & Headstock extending diagonally -->
+                        <rect x="${gX - 75}" y="${gY - 45}" width="110" height="12" fill="url(#guitarNeckGrad)" transform="rotate(-25 ${gX - 20} ${gY - 40})" rx="2"/>
+                        <!-- Headstock with Tuning Pegs -->
+                        <rect x="${gX - 105}" y="${gY - 58}" width="20" height="16" fill="#451a03" rx="2" transform="rotate(-25 ${gX - 95} ${gY - 50})"/>
+                        <circle cx="${gX - 95}" cy="${gY - 50}" r="2" fill="#fef08a"/>
+                        <circle cx="${gX - 85}" cy="${gY - 54}" r="2" fill="#fef08a"/>
+                        
+                        <!-- Guitar Body Figure-8 Shape -->
+                        <path d="M ${gX - 10} ${gY - 12} 
+                                 C ${gX + 25} ${gY - 35}, ${gX + 55} ${gY - 20}, ${gX + 50} ${gY + 8} 
+                                 C ${gX + 45} ${gY + 22}, ${gX + 65} ${gY + 35}, ${gX + 52} ${gY + 55} 
+                                 C ${gX + 32} ${gY + 75}, ${gX - 25} ${gY + 68}, ${gX - 38} ${gY + 42} 
+                                 C ${gX - 48} ${gY + 22}, ${gX - 28} ${gY + 5}, ${gX - 10} ${gY - 12} Z" 
+                              fill="url(#guitarBodyGrad)" stroke="#78350f" stroke-width="2.5"/>
+
+                        <!-- Acoustic Guitar Sound Hole & Rosette -->
+                        <circle cx="${gX + 10}" cy="${gY + 16}" r="11" fill="#78350f" stroke="#fde047" stroke-width="1.5"/>
+                        <circle cx="${gX + 10}" cy="${gY + 16}" r="8" fill="#0f172a"/>
+                        
+                        <!-- Wooden Bridge -->
+                        <rect x="${gX + 22}" y="${gY + 38}" width="6" height="18" fill="#451a03" rx="1"/>
+
+                        <!-- Parallel Guitar Strings -->
+                        <line x1="${gX - 90}" y1="${gY - 52}" x2="${gX + 25}" y2="${gY + 40}" stroke="#ffffff" stroke-width="1" opacity="0.8"/>
+                        <line x1="${gX - 90}" y1="${gY - 50}" x2="${gX + 25}" y2="${gY + 44}" stroke="#ffffff" stroke-width="1" opacity="0.8"/>
+                        <line x1="${gX - 90}" y1="${gY - 48}" x2="${gX + 25}" y2="${gY + 47}" stroke="#ffffff" stroke-width="1" opacity="0.8"/>
+                    </g>
+                `;
+            }
+
+            svgContent += `</g>`;
+
+            svg.innerHTML = svgContent;
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+
+        function downloadPNG() {
+            playSuccessSound();
+
+            const svgElement = document.getElementById('minion-svg');
+            const svgString = new XMLSerializer().serializeToString(svgElement);
+            const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+            const URL = window.URL || window.webkitURL || window;
+            const blobURL = URL.createObjectURL(blob);
+
+            const image = new Image();
+            image.onload = function() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 500;
+                canvas.height = 500;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, 500, 500);
+                ctx.drawImage(image, 0, 0, 500, 500);
+
+                const png = canvas.toDataURL('image/png');
+                const downloadLink = document.createElement('a');
+                downloadLink.href = png;
+                const filename = (state.nametag || 'MINION').replace(/[^a-zA-Z0-9]/g, '_');
+                downloadLink.download = `Minion_${filename}_Avatar.png`;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+                URL.revokeObjectURL(blobURL);
+            };
+            image.src = blobURL;
+        }
+
+        // Initialize Application
+        window.onload = function() {
+            highlightActiveCards();
+            renderMinionSVG();
+        };
+    </script>
+</body>
+</html>
